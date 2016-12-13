@@ -7,9 +7,9 @@ from Folder import Folder
 from Word import Word
 import os
 
-distinctWords = {}
-spamEmails = []
-legitEmails = []
+trainingDistinctWords = {}
+trainingSpamEmails = []
+trainingLegitEmails = []
 folderList = []
 nWordsSpam = 0
 nWordsLegit = 0
@@ -29,67 +29,69 @@ def loadEmails(path):
 
             folderList.append(folder)
 
-def prepareTrainingSet(testingIndex):
-        distinctWords = {}
-        spamEmails = []
-        legitEmails = []
+def preparingTrainingSet(testingIndex):
+
+        print("Preparing training set (find distinct words and load training spam and legit emails)...")
         
-        print("Find distinct words and load training spam and legit emails...")
+        trainingSpamEmails = []
+        trainingLegitEmails = []
+        trainingDistinctWords = {}
+        
         #getting all the emails read except for the testing index
         for i in range(len(folderList)):
             if i != testingIndex:
-                print("Folder",i)
-                spamEmails += folderList[i].spamEmail
-                legitEmails += folderList[i].legitEmail
+                print("Preparing folder[",i,"]...")
+                trainingSpamEmails += folderList[i].spamEmail
+                trainingLegitEmails += folderList[i].legitEmail
 
-        print("Spam: ", len(spamEmails))
-        print("Legit: ", len(legitEmails))
+        print("Spam: ", len(trainingSpamEmails))
+        print("Legit: ", len(trainingLegitEmails))
 
-        for email in legitEmails:
+        for email in trainingLegitEmails:
             email = email.split()
-            splittedEmail = set(email)
+            tokenizedEmail = set(email)
 
             #count term frequencies
-            for token in splittedEmail:
-                if token in distinctWords:
-                    word = distinctWords.get(token)
+            for token in tokenizedEmail:
+                if token in trainingDistinctWords:
+                    word = trainingDistinctWords.get(token)
                     word.presentLegitCount += 1
                     word.notPresentLegitCount -= 1
                 else:
                     word = Word(token)
                     word.presentLegitCount = 1  #number of times the word appeared in an email
-                    word.notPresentLegitCount = len(legitEmails) - 1
+                    word.notPresentLegitCount = len(trainingLegitEmails) - 1
                     word.presentSpamCount = 0
-                    word.notPresentSpamCount = len(spamEmails)
-                    distinctWords[token] = word
+                    word.notPresentSpamCount = len(trainingSpamEmails)
+                    trainingDistinctWords[token] = word
 
 
 
-        for email in spamEmails:
+        for email in trainingSpamEmails:
             email = email.split()
-            splittedEmail = set(email)
+            tokenizedEmail = set(email)
             
-            for token in splittedEmail:
-                if token in distinctWords:
-                    word = distinctWords.get(token)
+            for token in tokenizedEmail:
+                if token in trainingDistinctWords:
+                    word = trainingDistinctWords.get(token)
                     word.presentSpamCount += 1
                     word.notPresentSpamCount -= 1
                 else:
                     word = Word(token)
                     word.presentSpamCount = 1
-                    word.notPresentSpamCount = len(spamEmails) - 1
+                    word.notPresentSpamCount = len(trainingSpamEmails) - 1
                     word.presentLegitCount = 0
-                    word.notPresentLegitCount = len(legitEmails)
-                    distinctWords[token] = word
+                    word.notPresentLegitCount = len(trainingLegitEmails)
+                    trainingDistinctWords[token] = word
 
 
 
-        print("Distinct words: ", len(distinctWords))
+        print("Training distinct words: ", len(trainingDistinctWords))
 
 
 #start
 loadEmails('data\\bare\\part')
 
 for i in range(10):
-    prepareTrainingSet(i)
+    preparingTrainingSet(i)
             
