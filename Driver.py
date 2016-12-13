@@ -1,10 +1,7 @@
 import os
 #from __builtin__ import file
 
-from nltk.corpus import wordnet as wn
-
-SPAM = 'sp'
-LEGITIMATE = "lg"
+#from nltk.corpus import wordnet as wn
 
 # 1 string = 1 email
 testData = [] #testing emails
@@ -33,7 +30,7 @@ def loadEmails(i, j):
         file = open(path + filename, 'r')
         content = file.read()
         
-        if filename.startswith(SPAM):
+        if filename.startswith('sp'):
             spamEmails.append(file)
         else:
             legitEmails.append(file)
