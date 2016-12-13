@@ -6,6 +6,7 @@ Created on Dec 13, 2016
 from Folder import Folder
 from Word import Word
 import os
+import re
 
 trainDistinctWords = {}
 distinctWords = []
@@ -24,6 +25,8 @@ def loadEmails(path):
             print("Loading email[",i,"]...")
             for filename in os.listdir(folderPath):
                 content = open(folderPath + '\\' + filename).read()
+                content = content.translate(str.maketrans("", "", '`~!@#$%^&*()_+-=[]{}\\,./?<>:;\'\"'))
+                content = re.sub("\d+", " ", content)
                 if filename.startswith('sp'):
                     folder.addSpamEmail(content)
                 else:
