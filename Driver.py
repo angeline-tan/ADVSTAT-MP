@@ -88,8 +88,9 @@ def preparingTrainingSet(testingIndex):
 
         print("Training distinct words: ", len(trainingDistinctWords))
 
+
 #start
-loadEmails('data\\bare\\part')
+loadEmails('spam emails\\bare\\part')
 
 for i in range(10):
     preparingTrainingSet(i)
