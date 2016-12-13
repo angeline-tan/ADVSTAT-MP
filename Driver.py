@@ -7,9 +7,9 @@ from Folder import Folder
 from Word import Word
 import os
 
-trainDistinctWords = {}
-trainSpamEmails = []
-trainLegitEmails = []
+distinctWords = {}
+spamEmails = []
+legitEmails = []
 folderList = []
 nWordsSpam = 0
 nWordsLegit = 0
@@ -30,61 +30,61 @@ def loadEmails(path):
             folderList.append(folder)
 
 def prepareTrainingSet(testingIndex):
-        trainDistinctWords = {}
-        trainSpamEmails = []
-        trainLegitEmails = []
+        distinctWords = {}
+        spamEmails = []
+        legitEmails = []
         
         print("Find distinct words and load training spam and legit emails...")
         #getting all the emails read except for the testing index
         for i in range(len(folderList)):
             if i != testingIndex:
                 print("Folder",i)
-                trainSpamEmails += folderList[i].spamEmail
-                trainLegitEmails += folderList[i].legitEmail
+                spamEmails += folderList[i].spamEmail
+                legitEmails += folderList[i].legitEmail
 
-        print("Spam: ", len(trainSpamEmails))
-        print("Legit: ", len(trainLegitEmails))
+        print("Spam: ", len(spamEmails))
+        print("Legit: ", len(legitEmails))
 
-        for email in trainLegitEmails:
+        for email in legitEmails:
             email = email.split()
             splittedEmail = set(email)
 
             #count term frequencies
             for token in splittedEmail:
-                if token in trainDistinctWords:
-                    word = trainDistinctWords.get(token)
+                if token in distinctWords:
+                    word = distinctWords.get(token)
                     word.presentLegitCount += 1
                     word.notPresentLegitCount -= 1
                 else:
                     word = Word(token)
                     word.presentLegitCount = 1  #number of times the word appeared in an email
-                    word.notPresentLegitCount = len(trainLegitEmails) - 1
+                    word.notPresentLegitCount = len(legitEmails) - 1
                     word.presentSpamCount = 0
-                    word.notPresentSpamCount = len(trainSpamEmails)
-                    trainDistinctWords[token] = word
+                    word.notPresentSpamCount = len(spamEmails)
+                    distinctWords[token] = word
 
 
 
-        for email in trainSpamEmails:
+        for email in spamEmails:
             email = email.split()
             splittedEmail = set(email)
             
             for token in splittedEmail:
-                if token in trainDistinctWords:
-                    word = trainDistinctWords.get(token)
+                if token in distinctWords:
+                    word = distinctWords.get(token)
                     word.presentSpamCount += 1
                     word.notPresentSpamCount -= 1
                 else:
                     word = Word(token)
                     word.presentSpamCount = 1
-                    word.notPresentSpamCount = len(trainSpamEmails) - 1
+                    word.notPresentSpamCount = len(spamEmails) - 1
                     word.presentLegitCount = 0
-                    word.notPresentLegitCount = len(trainLegitEmails)
-                    trainDistinctWords[token] = word
+                    word.notPresentLegitCount = len(legitEmails)
+                    distinctWords[token] = word
 
 
 
-        print("Distinct words: ", len(trainDistinctWords))
+        print("Distinct words: ", len(distinctWords))
 
 
 #start
