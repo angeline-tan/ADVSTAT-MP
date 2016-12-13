@@ -90,7 +90,7 @@ def preparingTrainingSet(testingIndex):
 
 
 #start
-loadEmails('spam emails\\bare\\part')
+loadEmails('data\\bare\\part')
 
 for i in range(10):
     preparingTrainingSet(i)
