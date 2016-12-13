@@ -7,9 +7,9 @@ from Folder import Folder
 from Word import Word
 import os
 
-trainingDistinctWords = {}
-trainingSpamEmails = []
-trainingLegitEmails = []
+distinctWords = {}
+spamEmails = []
+legitEmails = []
 folderList = []
 nWordsSpam = 0
 nWordsLegit = 0
@@ -29,69 +29,67 @@ def loadEmails(path):
 
             folderList.append(folder)
 
-def preparingTrainingSet(testingIndex):
-
-        print("Preparing training set (find distinct words and load training spam and legit emails)...")
+def prepareTrainingSet(testingIndex):
+        distinctWords = {}
+        spamEmails = []
+        legitEmails = []
         
-        trainingSpamEmails = []
-        trainingLegitEmails = []
-        trainingDistinctWords = {}
-        
+        print("Find distinct words and load training spam and legit emails...")
         #getting all the emails read except for the testing index
         for i in range(len(folderList)):
             if i != testingIndex:
-                print("Preparing folder[",i,"]...")
-                trainingSpamEmails += folderList[i].spamEmail
-                trainingLegitEmails += folderList[i].legitEmail
+                print("Folder",i)
+                spamEmails += folderList[i].spamEmail
+                legitEmails += folderList[i].legitEmail
 
-        print("Spam: ", len(trainingSpamEmails))
-        print("Legit: ", len(trainingLegitEmails))
+        print("Spam: ", len(spamEmails))
+        print("Legit: ", len(legitEmails))
 
-        for email in trainingLegitEmails:
+        for email in legitEmails:
             email = email.split()
-            tokenizedEmail = set(email)
+            splittedEmail = set(email)
 
             #count term frequencies
-            for token in tokenizedEmail:
-                if token in trainingDistinctWords:
-                    word = trainingDistinctWords.get(token)
+            for token in splittedEmail:
+                if token in distinctWords:
+                    word = distinctWords.get(token)
                     word.presentLegitCount += 1
                     word.notPresentLegitCount -= 1
                 else:
                     word = Word(token)
                     word.presentLegitCount = 1  #number of times the word appeared in an email
-                    word.notPresentLegitCount = len(trainingLegitEmails) - 1
+                    word.notPresentLegitCount = len(legitEmails) - 1
                     word.presentSpamCount = 0
-                    word.notPresentSpamCount = len(trainingSpamEmails)
-                    trainingDistinctWords[token] = word
+                    word.notPresentSpamCount = len(spamEmails)
+                    distinctWords[token] = word
 
 
 
-        for email in trainingSpamEmails:
+        for email in spamEmails:
             email = email.split()
-            tokenizedEmail = set(email)
+            splittedEmail = set(email)
             
-            for token in tokenizedEmail:
-                if token in trainingDistinctWords:
-                    word = trainingDistinctWords.get(token)
+            for token in splittedEmail:
+                if token in distinctWords:
+                    word = distinctWords.get(token)
                     word.presentSpamCount += 1
                     word.notPresentSpamCount -= 1
                 else:
                     word = Word(token)
                     word.presentSpamCount = 1
-                    word.notPresentSpamCount = len(trainingSpamEmails) - 1
+                    word.notPresentSpamCount = len(spamEmails) - 1
                     word.presentLegitCount = 0
-                    word.notPresentLegitCount = len(trainingLegitEmails)
-                    trainingDistinctWords[token] = word
+                    word.notPresentLegitCount = len(legitEmails)
+                    distinctWords[token] = word
 
 
 
-        print("Training distinct words: ", len(trainingDistinctWords))
+        print("Distinct words: ", len(distinctWords))
 
 
 #start
 loadEmails('data\\bare\\part')
 
 for i in range(10):
-    preparingTrainingSet(i)
+    prepareTrainingSet(i)
             
