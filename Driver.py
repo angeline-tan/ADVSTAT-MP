@@ -8,11 +8,13 @@ from Word import Word
 import os
 
 trainDistinctWords = {}
+distinctWords = []
 trainSpamEmails = []
 trainLegitEmails = []
 folderList = []
 nWordsSpam = 0
 nWordsLegit = 0
+
 
 def loadEmails(path):
         print("Loading emails...")
@@ -31,6 +33,7 @@ def loadEmails(path):
 
 def prepareTrainingSet(testingIndex):
         trainDistinctWords = {}
+        distinctWords = []
         trainSpamEmails = []
         trainLegitEmails = []
         
@@ -47,42 +50,49 @@ def prepareTrainingSet(testingIndex):
 
         for email in trainLegitEmails:
             email = email.split()
-            splittedEmail = set(email)   
-
+            listOfWordsInEmail = set(email)
             #count term frequencies
-            for token in splittedEmail:
-                if token in trainDistinctWords:
-                    word = trainDistinctWords.get(token)
-                    word.presentLegitCount += 1
-                    word.notPresentLegitCount -= 1
-                else:
+            for token in listOfWordsInEmail:                                     #a word in the list of words in email
+                token = token.lower()
+                #newWord = True
+                if token not in trainDistinctWords:
                     word = Word(token)
-                    word.presentLegitCount = 1  #number of times the word appeared in an email
-                    word.notPresentLegitCount = len(trainLegitEmails) - 1
-                    word.presentSpamCount = 0
-                    word.notPresentSpamCount = len(trainSpamEmails)
+                    word.wordInEmail = True
+                    word.countLegitEmailContainingWord += 1                      #this token is in the email so counter + 1 for how many documents contains this word
                     trainDistinctWords[token] = word
-
-
+                elif token in trainDistinctWords:
+                    word = trainDistinctWords.get(token)
+                    if word.wordInEmail == False:
+                        word.countLegitEmailContainingWord +=1
+                        word.wordInEmail = True
+    
+            for w in trainDistinctWords:
+                trainDistinctWords[w].wordInEmail = False
+        for wo in trainDistinctWords:
+                trainDistinctWords[wo].countLegitEmailNotContainingWord = len(trainLegitEmails) - wo.countLegitEmailContainingWord
 
         for email in trainSpamEmails:
             email = email.split()
-            splittedEmail = set(email)
-            
-            for token in splittedEmail:
-                if token in trainDistinctWords:
-                    word = trainDistinctWords.get(token)
-                    word.presentSpamCount += 1
-                    word.notPresentSpamCount -= 1
-                else:
+            listOfWordsInEmail = set(email)
+            #count term frequencies
+            for token in listOfWordsInEmail:                                     #a word in the list of words in email
+                token = token.lower()
+                #newWord = True
+                if token not in trainDistinctWords:
                     word = Word(token)
-                    word.presentSpamCount = 1
-                    word.notPresentSpamCount = len(trainSpamEmails) - 1
-                    word.presentLegitCount = 0
-                    word.notPresentLegitCount = len(trainLegitEmails)
+                    word.wordInEmail = True
+                    word.countSpamEmailContainingWord += 1                      #this token is in the email so counter + 1 for how many documents contains this word
                     trainDistinctWords[token] = word
-
-
+                elif token in trainDistinctWords:
+                    word = trainDistinctWords.get(token)
+                    if word.wordInEmail == False:
+                        word.countSpamEmailContainingWord +=1
+                        word.wordInEmail = True
+    
+            for w in trainDistinctWords:
+                trainDistinctWords[w].wordInEmail = False
+        for wo in trainDistinctWords:
+                trainDistinctWords[wo].countSpamEmailNotContainingWord = len(trainSpamEmails) - wo.countSpamEmailContainingWord
 
         print("Distinct words: ", len(trainDistinctWords))
 
