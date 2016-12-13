@@ -14,3 +14,11 @@ class Word:
 
         self.spamDocumentCount = 0
         self.legitDocumentCount = 0
+        
+        self.countLegitEmailContainingWord = 0
+        self.countLegitEmailNotContainingWord = 0
+        
+        self.countSpamEmailContainingWord = 0
+        self.countSpamEmailNotContainingWord = 0
+        
+        self.wordInEmail = False
