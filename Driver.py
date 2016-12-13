@@ -17,17 +17,17 @@ nWordsLegit = 0
 def loadEmails(path):
         print("Loading emails...")
         for i in range(1,11):
-            partPath = path + str(i)
-            partFolder = Folder()
+            folderPath = path + str(i)
+            folder = Folder()
             print("Loading email[",i,"]...")
-            for filename in os.listdir(partPath):
-                content = open(partPath + '\\' + filename).read()
+            for filename in os.listdir(folderPath):
+                content = open(folderPath + '\\' + filename).read()
                 if filename.startswith('sp'):
-                    partFolder.addSpamEmail(content)
+                    folder.addSpamEmail(content)
                 else:
-                    partFolder.addLegitimateEmail(content)
+                    folder.addLegitimateEmail(content)
 
-            folderList.append(partFolder)
+            folderList.append(folder)
 
 def prepareTrainingSet(testingIndex):
         distinctWords = {}
