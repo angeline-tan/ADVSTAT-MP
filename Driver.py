@@ -1,7 +1,7 @@
 import os
 #from __builtin__ import file
 
-#import nltk
+from nltk.corpus import wordnet as wn
 
 SPAM = 'sp'
 LEGITIMATE = "lg"
@@ -15,7 +15,7 @@ emailContents = []
 #stopEmails = []
 spamEmails = []
 legitEmails = []
-wordBank = []
+wordList = []
 
 # loads jth part of an email folder j (part 1 of folder 1 (bare))
 def loadEmails(i, j):
@@ -53,10 +53,31 @@ def loadEmails(i, j):
         file.close()
         
 
+# checks if word exists in wordnet nltk
+def checkWord(word):
+    #print("checking word: " + word)
+    if wn.synsets(word):  # @UndefinedVariable
+        #print (word + " exists")
+        return True
+    else:
+        #print (word + " does not exist")
+        return False
+
 # iterates through all emails and gets each word, ignores duplicates
 def createWordList():
-    for i in range(0, emailContents.__len__()):
-        emailContents[i]
+    for i in range(0, emailContents.__len__()-1):
+        tempWords = emailContents[i].strip().split()
+        #tempWords = nltk.word_tokenize(emailContents[i]) # try this if nltk finishes downloading
+        #for word in tempWords:
+            #print word
+        for word in tempWords:
+            if checkWord(word) & bool(word not in wordList):
+                #print ("added " + word + " to list")
+                wordList.append(word)
+                print("Adding word #" + str(wordList.__len__()-1))
+                
+                if wordList.__len__ % 1000 == 0:
+                    print("...")
 
 # ----------------------- MAIN ----------------------------
 # loads emails from all folders (bare, lemm, lemm_stop, stop)
@@ -70,6 +91,12 @@ for i in range(1, 5):
     else:
         print("Loading stop folder")
     for j in range(1, 11):
-        print("  Loading part" + str(j))
+        #print("  Loading part" + str(j))
         loadEmails(i, j)
 
+# adds all words into a list
+print("Building word list, please wait...")
+createWordList()
+#for word in wordList:
+    #print word
+print ("Total words in the list: " + str(wordList.__len__()))
