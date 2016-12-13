@@ -47,7 +47,7 @@ def prepareTrainingSet(testingIndex):
 
         for email in trainLegitEmails:
             email = email.split()
-            splittedEmail = set(email)
+            splittedEmail = set(email)   
 
             #count term frequencies
             for token in splittedEmail:
