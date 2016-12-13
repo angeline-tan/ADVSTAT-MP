@@ -1,102 +1,96 @@
+'''
+Created on Dec 13, 2016
+
+@author: Janine Tan
+'''
+from Folder import Folder
+from Word import Word
 import os
-#from __builtin__ import file
 
-from nltk.corpus import wordnet as wn
+trainingDistinctWords = {}
+trainingSpamEmails = []
+trainingLegitEmails = []
+folderList = []
+nWordsSpam = 0
+nWordsLegit = 0
 
-SPAM = 'sp'
-LEGITIMATE = "lg"
+def loadEmails(path):
+        print("Loading emails...")
+        for i in range(1,11):
+            partPath = path + str(i)
+            partFolder = Folder()
+            print("Loading email[",i,"]...")
+            for filename in os.listdir(partPath):
+                content = open(partPath + '\\' + filename).read()
+                if filename.startswith('sp'):
+                    partFolder.addSpamEmail(content)
+                else:
+                    partFolder.addLegitimateEmail(content)
 
-# 1 string = 1 email
-testData = [] #testing emails
-emailContents = []
-#bareEmails = []
-#lemmEmails = []
-#lemm_stopEmails = []
-#stopEmails = []
-spamEmails = []
-legitEmails = []
-wordList = []
+            folderList.append(partFolder)
 
-# loads jth part of an email folder j (part 1 of folder 1 (bare))
-def loadEmails(i, j):
-    if i == 1:
-        path = 'data\\bare\\part' + str(j) + '\\'
-    elif i == 2:
-        path = 'data\\lemm\\part' + str(j) + '\\'
-    elif i == 3:
-        path = 'data\\lemm_stop\\part' + str(j) + '\\'
-    else:
-        path = 'data\\stop\\part' + str(j) + '\\'
-    file_list = os.listdir(path)
-    
-    for filename in file_list:
-        file = open(path + filename, 'r')
-        content = file.read()
+def preparingTrainingSet(testingIndex):
+
+        print("Preparing training set (find distinct words and load training spam and legit emails)...")
         
-        if filename.startswith(SPAM):
-            spamEmails.append(file)
-        else:
-            legitEmails.append(file)
-        #print content
-        #if i == 1:
-            #bareEmails.append(content)
-        #elif i == 2:
-            #lemmEmails.append(content)
-        #elif i == 3:
-            #lemm_stopEmails.append(content)
-        #else:
-            #stopEmails.append(content)
-        if j == 1:
-            testData.append(content) # to be used later for the validation & training part
-        emailContents.append(content)
-        #print ("***********************************\n")
-        file.close()
+        trainingSpamEmails = []
+        trainingLegitEmails = []
+        trainingDistinctWords = {}
         
+        #getting all the emails read except for the testing index
+        for i in range(len(folderList)):
+            if i != testingIndex:
+                print("Preparing folder[",i,"]...")
+                trainingSpamEmails += folderList[i].spamEmail
+                trainingLegitEmails += folderList[i].legitEmail
 
-# checks if word exists in wordnet nltk
-def checkWord(word):
-    #print("checking word: " + word)
-    if wn.synsets(word):  # @UndefinedVariable
-        #print (word + " exists")
-        return True
-    else:
-        #print (word + " does not exist")
-        return False
+        print("Spam: ", len(trainingSpamEmails))
+        print("Legit: ", len(trainingLegitEmails))
 
-# iterates through all emails and gets each word, ignores duplicates
-def createWordList():
-    for i in range(0, emailContents.__len__()-1):
-        tempWords = emailContents[i].strip().split()
-        #tempWords = nltk.word_tokenize(emailContents[i]) # try this if nltk finishes downloading
-        #for word in tempWords:
-            #print word
-        for word in tempWords:
-            if checkWord(word) & bool(word not in wordList):
-                #print ("added " + word + " to list")
-                wordList.append(word)
-                print("Adding word #" + str(wordList.__len__()-1))
-                
-                if wordList.__len__ % 1000 == 0:
-                    print("...")
+        for email in trainingLegitEmails:
+            email = email.split()
+            tokenizedEmail = set(email)
 
-# ----------------------- MAIN ----------------------------
-# loads emails from all folders (bare, lemm, lemm_stop, stop)
-for i in range(1, 5):
-    if i == 1:
-        print("Loading bare folder")
-    elif i == 2:
-        print("Loading lemm folder")
-    elif i == 3:
-        print("Loading lemm_stop folder")
-    else:
-        print("Loading stop folder")
-    for j in range(1, 11):
-        #print("  Loading part" + str(j))
-        loadEmails(i, j)
+            #count term frequencies
+            for token in tokenizedEmail:
+                if token in trainingDistinctWords:
+                    word = trainingDistinctWords.get(token)
+                    word.presentLegitCount += 1
+                    word.notPresentLegitCount -= 1
+                else:
+                    word = Word(token)
+                    word.presentLegitCount = 1  #number of times the word appeared in an email
+                    word.notPresentLegitCount = len(trainingLegitEmails) - 1
+                    word.presentSpamCount = 0
+                    word.notPresentSpamCount = len(trainingSpamEmails)
+                    trainingDistinctWords[token] = word
 
-# adds all words into a list
-print("Building word list, please wait...")
-createWordList()
-#for word in wordList:
-    #print word
-print ("Total words in the list: " + str(wordList.__len__()))
+
+
+        for email in trainingSpamEmails:
+            email = email.split()
+            tokenizedEmail = set(email)
+            
+            for token in tokenizedEmail:
+                if token in trainingDistinctWords:
+                    word = trainingDistinctWords.get(token)
+                    word.presentSpamCount += 1
+                    word.notPresentSpamCount -= 1
+                else:
+                    word = Word(token)
+                    word.presentSpamCount = 1
+                    word.notPresentSpamCount = len(trainingSpamEmails) - 1
+                    word.presentLegitCount = 0
+                    word.notPresentLegitCount = len(trainingLegitEmails)
+                    trainingDistinctWords[token] = word
+
+
+
+        print("Training distinct words: ", len(trainingDistinctWords))
+
+#start
+loadEmails('data\\bare\\part')
+
+for i in range(10):
+    preparingTrainingSet(i)
+            
