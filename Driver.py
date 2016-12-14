@@ -9,10 +9,10 @@ from decimal import *
 from collections import Counter
 
 trainDistinctWords = {}
-distinctWords = []
 trainSpamEmails = []
 trainLegitEmails = []
 folderList = []
+topTrainDistinctWords = {}
 
 class Word:
     def __init__(self, content):
@@ -53,7 +53,6 @@ def loadEmails(path):
 
 def prepareTrainingSet(testingIndex):
         global trainDistinctWords
-        global distinctWords
         global trainSpamEmails
         global trainLegitEmails
         
@@ -110,71 +109,47 @@ def prepareTrainingSet(testingIndex):
         for wo in trainDistinctWords:
                 trainDistinctWords[wo].countSpamEmailNotContainingWord = len(trainSpamEmails) - trainDistinctWords[wo].countSpamEmailContainingWord
         
-        '''
-        for k in trainDistinctWords:
-            print("WORD: " + trainDistinctWords[k].content)
-            print("NUmber of Legit Email Containing the word: " + str(trainDistinctWords[k].countLegitEmailContainingWord))
-            print("NUmber of Legit Email Not Containing the word: " + str(trainDistinctWords[k].countLegitEmailNotContainingWord))
-            print("NUmber of Spam Email Containing the word: " + str(trainDistinctWords[k].countSpamEmailContainingWord))
-            print("NUmber of Spam Email Not Containing the word: " + str(trainDistinctWords[k].countSpamEmailNotContainingWord))
-        '''
-        
-        
         print("Distinct words: ", len(trainDistinctWords))
 
 def selectFeatures():
         print("Extracting features/ feature selections..................................")
         global trainDistinctWords
+        global topTrainDistinctWords
         
-        trainDistinctWords =  getRelevantWords(trainDistinctWords)
-        
-def getRelevantWords(distinctWords):
-        for k in distinctWords:
-            distinctWords[k].mutualInfo = getMutualInfo(distinctWords[k])
+        for k in trainDistinctWords:
+            trainDistinctWords[k].mutualInfo = getMutualInfo(trainDistinctWords[k])
 
-        distinctWords = sorted(distinctWords.items(), key=lambda x:x[1].mutualInfo, reverse = True)[:50]
+        topTrainDistinctWords = sorted(trainDistinctWords.items(), key=lambda x:x[1].mutualInfo, reverse = True)[:50]
 
 
-        distinctWords = {x[0]: x[1] for x in distinctWords}
-        print("after convert back to dictionary..........................")
-
-        return distinctWords
+        topTrainDistinctWords = {x[0]: x[1] for x in topTrainDistinctWords}
 
 def getMutualInfo(distinctWord):
-    
         totalResults = distinctWord.countLegitEmailContainingWord + distinctWord.countLegitEmailNotContainingWord + distinctWord.countSpamEmailContainingWord + distinctWord.countSpamEmailNotContainingWord
 
         try:
             # P(x=0,c=spam)
-            mutualInfo = (distinctWord.countSpamEmailNotContainingWord/totalResults)*\
-                         math.log((distinctWord.countSpamEmailNotContainingWord * totalResults)/\
-                                    ((distinctWord.countSpamEmailNotContainingWord + distinctWord.countLegitEmailNotContainingWord)*(distinctWord.countSpamEmailNotContainingWord + distinctWord.countSpamEmailContainingWord)),2)
+            mutualInfo = (distinctWord.countSpamEmailNotContainingWord/totalResults)* math.log((distinctWord.countSpamEmailNotContainingWord * totalResults)/((distinctWord.countSpamEmailNotContainingWord + distinctWord.countLegitEmailNotContainingWord)*(distinctWord.countSpamEmailNotContainingWord + distinctWord.countSpamEmailContainingWord)),2)
 
         except (ZeroDivisionError, ValueError):
             mutualInfo = 0.0
    
         try:
             # P(x=0,c=legitimate)
-            mutualInfo += (distinctWord.countLegitEmailNotContainingWord/totalResults) *\
-                          math.log((distinctWord.countLegitEmailNotContainingWord * totalResults) /\
-                                     ((distinctWord.countLegitEmailNotContainingWord+distinctWord.countSpamEmailNotContainingWord) * (distinctWord.countLegitEmailNotContainingWord + distinctWord.countLegitEmailContainingWord)),2)
+            mutualInfo += (distinctWord.countLegitEmailNotContainingWord/totalResults) *math.log((distinctWord.countLegitEmailNotContainingWord * totalResults) /((distinctWord.countLegitEmailNotContainingWord+distinctWord.countSpamEmailNotContainingWord) * (distinctWord.countLegitEmailNotContainingWord + distinctWord.countLegitEmailContainingWord)),2)
 
         except (ZeroDivisionError, ValueError):
             mutualInfo += 0.0
         
         try:
             # P(x=1,c=spam)
-            mutualInfo += (distinctWord.countSpamEmailContainingWord / totalResults) *\
-                          math.log((distinctWord.countSpamEmailContainingWord * totalResults)/\
-                                     ((distinctWord.countSpamEmailContainingWord+distinctWord.countLegitEmailContainingWord) * (distinctWord.countSpamEmailContainingWord + distinctWord.countSpamEmailNotContainingWord)),2)
+            mutualInfo += (distinctWord.countSpamEmailContainingWord / totalResults) *math.log((distinctWord.countSpamEmailContainingWord * totalResults)/((distinctWord.countSpamEmailContainingWord+distinctWord.countLegitEmailContainingWord) * (distinctWord.countSpamEmailContainingWord + distinctWord.countSpamEmailNotContainingWord)),2)
         except (ZeroDivisionError, ValueError):
             mutualInfo += 0.0
        
         try:
             # P(x=1,c=legitimate)
-            mutualInfo += (distinctWord.countLegitEmailContainingWord/totalResults) *\
-                          math.log((distinctWord.countLegitEmailContainingWord * totalResults)/\
-                                     ((distinctWord.countLegitEmailContainingWord+distinctWord.countSpamEmailContainingWord) * (distinctWord.countLegitEmailContainingWord + distinctWord.countLegitEmailNotContainingWord)),2)
+            mutualInfo += (distinctWord.countLegitEmailContainingWord/totalResults) *math.log((distinctWord.countLegitEmailContainingWord * totalResults)/((distinctWord.countLegitEmailContainingWord+distinctWord.countSpamEmailContainingWord) * (distinctWord.countLegitEmailContainingWord + distinctWord.countLegitEmailNotContainingWord)),2)
         except (ZeroDivisionError, ValueError):
             mutualInfo += 0.0
 
@@ -190,18 +165,17 @@ def computeNaiveBayes(emailContent):
         probWord_isPresentSpam = 1.0
         probWord_isPresentLegit = 1.0
 
-        
         #determine whther term appeared in document
 
-        for key in trainDistinctWords:
+        for key in topTrainDistinctWords:
             if key in emailContent:
                 dict_testingData[key] = 1
             else :
                 dict_testingData[key] = 0
 
-        for key in trainDistinctWords:
+        for key in topTrainDistinctWords:
             # if key in self.trainingDistinctWords:
-            word = trainDistinctWords[key]
+            word = topTrainDistinctWords[key]
             power = dict_testingData[key]
 
             prob_t_s = (1 + word.countSpamEmailContainingWord) / (2 + len(trainSpamEmails))
