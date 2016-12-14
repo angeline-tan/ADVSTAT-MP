@@ -37,11 +37,10 @@ class Folder:
         self.legitEmail.append(email)
         
 def loadEmails(path):
-        print("Loading emails...")
         for i in range(1,11):
             folderPath = path + str(i)
             folder = Folder()
-            print("Loading email[",i,"]...")
+            print("Loading Emails in Folder ", i)
             for filename in os.listdir(folderPath):
                 content = open(folderPath + '\\' + filename).read()
                 if filename.startswith('sp'):
@@ -55,6 +54,10 @@ def prepareTrainingSet(testingIndex):
         global trainDistinctWords
         global trainSpamEmails
         global trainLegitEmails
+        
+        trainDistinctWords = {}
+        trainSpamEmails = []
+        trainLegitEmails = []
         
         listOfWordsInEmail = []
         listOfWordsInLegitEmail = []
@@ -111,45 +114,47 @@ def prepareTrainingSet(testingIndex):
         
         print("Distinct words: ", len(trainDistinctWords))
 
-def selectFeatures():
+def selectFeatures(numAttribute):
         print("Extracting features/ feature selections..................................")
         global trainDistinctWords
         global topTrainDistinctWords
         
+        topTrainDistinctWords = {}
+        
         for k in trainDistinctWords:
             trainDistinctWords[k].mutualInfo = getMutualInfo(trainDistinctWords[k])
 
-        topTrainDistinctWords = sorted(trainDistinctWords.items(), key=lambda x:x[1].mutualInfo, reverse = True)[:50]
+        topTrainDistinctWords = sorted(trainDistinctWords.items(), key=lambda x:x[1].mutualInfo, reverse = True)[:numAttribute]
 
 
         topTrainDistinctWords = {x[0]: x[1] for x in topTrainDistinctWords}
 
-def getMutualInfo(distinctWord):
-        totalResults = distinctWord.countLegitEmailContainingWord + distinctWord.countLegitEmailNotContainingWord + distinctWord.countSpamEmailContainingWord + distinctWord.countSpamEmailNotContainingWord
+def getMutualInfo(word):
+        totalResults = word.countLegitEmailContainingWord + word.countLegitEmailNotContainingWord + word.countSpamEmailContainingWord + word.countSpamEmailNotContainingWord
 
         try:
             # P(x=0,c=spam)
-            mutualInfo = (distinctWord.countSpamEmailNotContainingWord/totalResults)* math.log((distinctWord.countSpamEmailNotContainingWord * totalResults)/((distinctWord.countSpamEmailNotContainingWord + distinctWord.countLegitEmailNotContainingWord)*(distinctWord.countSpamEmailNotContainingWord + distinctWord.countSpamEmailContainingWord)),2)
+            mutualInfo = (word.countSpamEmailNotContainingWord/totalResults)* math.log((word.countSpamEmailNotContainingWord * totalResults)/((word.countSpamEmailNotContainingWord + word.countLegitEmailNotContainingWord)*(word.countSpamEmailNotContainingWord + word.countSpamEmailContainingWord)),2)
 
         except (ZeroDivisionError, ValueError):
             mutualInfo = 0.0
    
         try:
             # P(x=0,c=legitimate)
-            mutualInfo += (distinctWord.countLegitEmailNotContainingWord/totalResults) *math.log((distinctWord.countLegitEmailNotContainingWord * totalResults) /((distinctWord.countLegitEmailNotContainingWord+distinctWord.countSpamEmailNotContainingWord) * (distinctWord.countLegitEmailNotContainingWord + distinctWord.countLegitEmailContainingWord)),2)
+            mutualInfo += (word.countLegitEmailNotContainingWord/totalResults) *math.log((word.countLegitEmailNotContainingWord * totalResults) /((word.countLegitEmailNotContainingWord+word.countSpamEmailNotContainingWord) * (word.countLegitEmailNotContainingWord + word.countLegitEmailContainingWord)),2)
 
         except (ZeroDivisionError, ValueError):
             mutualInfo += 0.0
         
         try:
             # P(x=1,c=spam)
-            mutualInfo += (distinctWord.countSpamEmailContainingWord / totalResults) *math.log((distinctWord.countSpamEmailContainingWord * totalResults)/((distinctWord.countSpamEmailContainingWord+distinctWord.countLegitEmailContainingWord) * (distinctWord.countSpamEmailContainingWord + distinctWord.countSpamEmailNotContainingWord)),2)
+            mutualInfo += (word.countSpamEmailContainingWord / totalResults) *math.log((word.countSpamEmailContainingWord * totalResults)/((word.countSpamEmailContainingWord+word.countLegitEmailContainingWord) * (word.countSpamEmailContainingWord + word.countSpamEmailNotContainingWord)),2)
         except (ZeroDivisionError, ValueError):
             mutualInfo += 0.0
        
         try:
             # P(x=1,c=legitimate)
-            mutualInfo += (distinctWord.countLegitEmailContainingWord/totalResults) *math.log((distinctWord.countLegitEmailContainingWord * totalResults)/((distinctWord.countLegitEmailContainingWord+distinctWord.countSpamEmailContainingWord) * (distinctWord.countLegitEmailContainingWord + distinctWord.countLegitEmailNotContainingWord)),2)
+            mutualInfo += (word.countLegitEmailContainingWord/totalResults) *math.log((word.countLegitEmailContainingWord * totalResults)/((word.countLegitEmailContainingWord+word.countSpamEmailContainingWord) * (word.countLegitEmailContainingWord + word.countLegitEmailNotContainingWord)),2)
         except (ZeroDivisionError, ValueError):
             mutualInfo += 0.0
 
@@ -187,62 +192,66 @@ def computeNaiveBayes(emailContent):
         return (probIsSpam * probWord_isPresentSpam) / (probIsSpam * probWord_isPresentSpam + probIsLegit * probWord_isPresentLegit)
 
 #start
-loadEmails('data\\lemm_stop\\part')
+loadEmails('data\\bare\\part')
 
-threshold_lambda = 999
-threshold = threshold_lambda /(1+threshold_lambda)
-
-sPrecision = 0
-sRecall = 0
-wAcc_b = 0
-wErr_b = 0
-wAcc = 0
-wErr = 0
-TCR = 0
+threshold_list = [1, 99, 999]
 
 for i in range(10):
     prepareTrainingSet(i)
-    selectFeatures()
+    print("Test Folder: ", i)
     
-    SpamCategSpam = 0 #spam email categorized as spam
-    SpamCategLegit = 0 #spam email categorized as legit
-    LegitCategSpam = 0 #legit email categorized as spam
-    LegitCategLegit = 0 #legit email categorized as legit
+    for x in range(50,700,50):
+        selectFeatures(x)
+        
+        SpamCategSpam = 0 #spam email categorized as spam
+        SpamCategLegit = 0 #spam email categorized as legit
+        LegitCategSpam = 0 #legit email categorized as spam
+        LegitCategLegit = 0 #legit email categorized as legit
+    
+        spamSize = len(folderList[i].spamEmail)
+        legitSize = len(folderList[i].legitEmail)
+        
+        for y in threshold_list:
+            sPrecision = 0
+            sRecall = 0
+            wAcc_b = 0
+            wErr_b = 0
+            wAcc = 0
+            wErr = 0
+            TCR = 0
+            threshold_lambda = y
+            threshold = threshold_lambda /(1+threshold_lambda)
+            for email in folderList[i].spamEmail:
+                result = computeNaiveBayes(email)
+                if result > threshold: #isSpam
+                    SpamCategSpam += 1
+                else: #isLegit
+                    SpamCategLegit += 1
+        
+            for email in folderList[i].legitEmail:
+                result = computeNaiveBayes(email)
+                if result > threshold: #isSpam
+                    LegitCategSpam += 1
+                else:
+                    LegitCategLegit += 1
+        
+            sPrecision = SpamCategSpam / (SpamCategSpam + LegitCategSpam)
+            sRecall = SpamCategSpam / (SpamCategSpam+SpamCategLegit)
+            wAcc = (threshold_lambda * LegitCategLegit + SpamCategSpam)/ (threshold_lambda * legitSize + spamSize)
+            wErr = (threshold_lambda * LegitCategSpam + SpamCategLegit)/ (threshold_lambda * legitSize + spamSize)
+            wAcc_b = (threshold_lambda * legitSize)/(threshold_lambda * legitSize + spamSize)
+            wErr_b = spamSize / (threshold_lambda * legitSize + spamSize)
+            TCR = wErr_b / wErr
+            
+            print("Number of Attribute: ", x, "Threshold: ", y)
+            print("Spam Precision: ", sPrecision)
+            print("Spam Precision(1-E): ", 1-wErr)
+            print("Spam Recall: ", sRecall)
+            print("wAcc: ", wAcc)
+            print("wErr: ", wErr)
+            print("wAcc_b: ", wAcc_b)
+            print("wErr_b: ", wErr_b)
+            print("TCR: ", TCR)
+            print()
 
-    print("Classifying testing data...[", i ,"]")
 
-    spamSize = len(folderList[i].spamEmail)
-    legitSize = len(folderList[i].legitEmail)
-    print("testing size:",  spamSize + legitSize)
-
-    for email in folderList[i].spamEmail:
-        result = computeNaiveBayes(email)
-        if result > threshold: #isSpam
-            SpamCategSpam += 1
-        else: #isLegit
-            SpamCategLegit += 1
-
-    for email in folderList[i].legitEmail:
-        result = computeNaiveBayes(email)
-        if result > threshold: #isSpam
-            LegitCategSpam += 1
-        else:
-            LegitCategLegit += 1
-
-    sPrecision += SpamCategSpam / (SpamCategSpam + LegitCategSpam)
-    sRecall += SpamCategSpam / (SpamCategSpam+SpamCategLegit)
-    wAcc += (threshold_lambda * LegitCategLegit + SpamCategSpam)/ (threshold_lambda * legitSize + spamSize)
-    wErr += (threshold_lambda * LegitCategSpam + SpamCategLegit)/ (threshold_lambda * legitSize + spamSize)
-    wAcc_b += (threshold_lambda * legitSize)/(threshold_lambda * legitSize + spamSize)
-    wErr_b += spamSize / (threshold_lambda * legitSize + spamSize)
-    TCR += wErr_b / wErr
-
-
-print("AVG Spam Precision: ", sPrecision/10)
-print("AVG Spam Precision(1-E): ", 1-wErr/10)
-print("AVG Spam Recall: ", sRecall/10)
-print("AVG wAcc: ", wAcc/10)
-print("AVG wErr: ", wErr/10)
-print("AVG wAcc_b: ", wAcc_b/10)
-print("AVG wErr_b: ", wErr_b/10)
-print("AVG TCR: ", TCR/10)
