@@ -8,6 +8,7 @@ from Word import Word
 import os
 import math
 from decimal import *
+from collections import Counter
 
 trainDistinctWords = {}
 distinctWords = []
@@ -37,6 +38,10 @@ def prepareTrainingSet(testingIndex):
         global trainSpamEmails
         global trainLegitEmails
         
+        listOfWordsInEmail = []
+        listOfWordsInLegitEmail = []
+        listOfWordsInSpamEmail = []
+        
         print("Find distinct words and load training spam and legit emails...")
         #getting all the emails read except for the testing index
         for i in range(len(folderList)):
@@ -47,61 +52,55 @@ def prepareTrainingSet(testingIndex):
 
         print("Spam: ", len(trainSpamEmails))
         print("Legit: ", len(trainLegitEmails))
-
+        
         for email in trainLegitEmails:
             email = email.split()
             listOfWordsInEmail = set(email)
-            #count term frequencies
-            for token in listOfWordsInEmail:                                     #a word in the list of words in email
-                token = token.lower()
-                #newWord = True
-                if token not in trainDistinctWords:
-                    word = Word(token)
-                    word.wordInEmail = True
-                    word.countLegitEmailContainingWord += 1                      #this token is in the email so counter + 1 for how many documents contains this word
-                    trainDistinctWords[token] = word
-                elif token in trainDistinctWords:
-                    word = trainDistinctWords.get(token)
-                    if word.wordInEmail == False:
-                        word.countLegitEmailContainingWord +=1
-                        word.wordInEmail = True
-    
-            for w in trainDistinctWords:
-                trainDistinctWords[w].wordInEmail = False
-        for wo in trainDistinctWords:
-                trainDistinctWords[wo].countLegitEmailNotContainingWord = len(trainLegitEmails) - trainDistinctWords[wo].countLegitEmailContainingWord
+            for token in listOfWordsInEmail:
+                listOfWordsInLegitEmail.append(token.lower())
 
+        ctrLegit = Counter(listOfWordsInLegitEmail)
+        
+        for token, count in ctrLegit.items():
+            word = Word(token)
+            word.countLegitEmailContainingWord = count
+            trainDistinctWords[token] = word
+   
+        listOfWordsInEmail = []
+            
         for email in trainSpamEmails:
             email = email.split()
             listOfWordsInEmail = set(email)
-            #count term frequencies
-            for token in listOfWordsInEmail:                                     #a word in the list of words in email
-                token = token.lower()
-                #newWord = True
-                if token not in trainDistinctWords:
-                    word = Word(token)
-                    word.wordInEmail = True
-                    word.countSpamEmailContainingWord += 1                      #this token is in the email so counter + 1 for how many documents contains this word
-                    trainDistinctWords[token] = word
-                elif token in trainDistinctWords:
-                    word = trainDistinctWords.get(token)
-                    if word.wordInEmail == False:
-                        word.countSpamEmailContainingWord +=1
-                        word.wordInEmail = True
-    
-            for w in trainDistinctWords:
-                trainDistinctWords[w].wordInEmail = False
+            for token in listOfWordsInEmail:
+                listOfWordsInSpamEmail.append(token.lower())
+        
+        ctrSpam = Counter(listOfWordsInSpamEmail)
+        
+        for token, count in ctrSpam.items():
+            if token not in trainDistinctWords:
+                word = Word(token)
+                word.countSpamEmailContainingWord = count  
+                trainDistinctWords[token] = word
+            else : 
+                word = trainDistinctWords.get(token)
+                word.countSpamEmailContainingWord = count 
+        
+        for wo in trainDistinctWords:
+                trainDistinctWords[wo].countLegitEmailNotContainingWord = len(trainLegitEmails) - trainDistinctWords[wo].countLegitEmailContainingWord
+        
         for wo in trainDistinctWords:
                 trainDistinctWords[wo].countSpamEmailNotContainingWord = len(trainSpamEmails) - trainDistinctWords[wo].countSpamEmailContainingWord
         
+        '''
+        for k in trainDistinctWords:
+            print("WORD: " + trainDistinctWords[k].content)
+            print("NUmber of Legit Email Containing the word: " + str(trainDistinctWords[k].countLegitEmailContainingWord))
+            print("NUmber of Legit Email Not Containing the word: " + str(trainDistinctWords[k].countLegitEmailNotContainingWord))
+            print("NUmber of Spam Email Containing the word: " + str(trainDistinctWords[k].countSpamEmailContainingWord))
+            print("NUmber of Spam Email Not Containing the word: " + str(trainDistinctWords[k].countSpamEmailNotContainingWord))
+        '''
         
-        #for k in trainDistinctWords:
-            #print("WORD: " + trainDistinctWords[k].content)
-            #print("NUmber of Legit Email Containing the word: " + str(trainDistinctWords[k].countLegitEmailContainingWord))
-            #print("NUmber of Legit Email Not Containing the word: " + str(trainDistinctWords[k].countLegitEmailNotContainingWord))
-            #print("NUmber of Spam Email Containing the word: " + str(trainDistinctWords[k].countSpamEmailContainingWord))
-            #print("NUmber of Spam Email Not Containing the word: " + str(trainDistinctWords[k].countSpamEmailNotContainingWord))
-            
+        
         print("Distinct words: ", len(trainDistinctWords))
 
 def selectFeatures():
@@ -114,12 +113,14 @@ def getRelevantWords(distinctWords):
         for k in distinctWords:
             distinctWords[k].mutualInfo = getMutualInfo(distinctWords[k])
 
-        distinctWords = sorted(distinctWords.items(), key=lambda x:x[1].mutualInfo, reverse = True)[:200]
+        distinctWords = sorted(distinctWords.items(), key=lambda x:x[1].mutualInfo, reverse = True)[:50]
 
 
         distinctWords = {x[0]: x[1] for x in distinctWords}
         print("after convert back to dictionary..........................")
 
+        for i in distinctWords:
+            print(distinctWords[i].content,distinctWords[i].mutualInfo)
 
         return distinctWords
 
@@ -165,7 +166,6 @@ def getMutualInfo(distinctWord):
 
 def computeNaiveBayes(emailContent):
         #Naive Bayes: Multinomial NB, TF attributes
-
         emailContent = emailContent.split()
         dict_testingData = {} # dictionary of distinct words in testing data
         total_trainingEmails = len(trainSpamEmails) + len(trainLegitEmails)
@@ -174,7 +174,7 @@ def computeNaiveBayes(emailContent):
         probWord_isPresentSpam = 1.0
         probWord_isPresentLegit = 1.0
 
-
+        
         #determine whther term appeared in document
 
         for key in trainDistinctWords:
@@ -197,7 +197,7 @@ def computeNaiveBayes(emailContent):
         return (probIsSpam * probWord_isPresentSpam) / (probIsSpam * probWord_isPresentSpam + probIsLegit * probWord_isPresentLegit)
 
 #start
-loadEmails('data\\bare\\part')
+loadEmails('data\\lemm_stop\\part')
 
 threshold_lambda = 999
 threshold = threshold_lambda /(1+threshold_lambda)
@@ -214,11 +214,10 @@ for i in range(10):
     prepareTrainingSet(i)
     selectFeatures()
     
-    
-    s_s = 0 #spam email categorized as spam
-    s_l = 0 #spam email categorized as legit
-    l_s = 0 #legit email categorized as spam
-    l_l = 0 #legit email categorized as legit
+    SpamCategSpam = 0 #spam email categorized as spam
+    SpamCategLegit = 0 #spam email categorized as legit
+    LegitCategSpam = 0 #legit email categorized as spam
+    LegitCategLegit = 0 #legit email categorized as legit
 
     print("Classifying testing data...[", i ,"]")
 
@@ -229,21 +228,21 @@ for i in range(10):
     for email in folderList[i].spamEmail:
         result = computeNaiveBayes(email)
         if result > threshold: #isSpam
-            s_s += 1
+            SpamCategSpam += 1
         else: #isLegit
-            s_l += 1
+            SpamCategLegit += 1
 
     for email in folderList[i].legitEmail:
         result = computeNaiveBayes(email)
         if result > threshold: #isSpam
-            l_s += 1
+            LegitCategSpam += 1
         else:
-            l_l += 1
+            LegitCategLegit += 1
 
-    sPrecision += s_s / (s_s + l_s)
-    sRecall += s_s / (s_s+s_l)
-    wAcc += (threshold_lambda * l_l + s_s)/ (threshold_lambda * legitSize + spamSize)
-    wErr += (threshold_lambda * l_s + s_l)/ (threshold_lambda * legitSize + spamSize)
+    sPrecision += SpamCategSpam / (SpamCategSpam + LegitCategSpam)
+    sRecall += SpamCategSpam / (SpamCategSpam+SpamCategLegit)
+    wAcc += (threshold_lambda * LegitCategLegit + SpamCategSpam)/ (threshold_lambda * legitSize + spamSize)
+    wErr += (threshold_lambda * LegitCategSpam + SpamCategLegit)/ (threshold_lambda * legitSize + spamSize)
     wAcc_b += (threshold_lambda * legitSize)/(threshold_lambda * legitSize + spamSize)
     wErr_b += spamSize / (threshold_lambda * legitSize + spamSize)
     TCR += wErr_b / wErr
