@@ -3,8 +3,6 @@ Created on Dec 13, 2016
 
 @author: Janine Tan
 '''
-from Folder import Folder
-from Word import Word
 import os
 import math
 from decimal import *
@@ -16,7 +14,28 @@ trainSpamEmails = []
 trainLegitEmails = []
 folderList = []
 
+class Word:
+    def __init__(self, content):
+        self.content = content
+        self.mutualInfo = 0
 
+        self.countLegitEmailContainingWord = 0
+        self.countLegitEmailNotContainingWord = 0
+        
+        self.countSpamEmailContainingWord = 0
+        self.countSpamEmailNotContainingWord = 0
+        
+class Folder:
+    def __init__(self):
+        self.spamEmail = []
+        self.legitEmail = []
+
+    def addSpamEmail(self, email):
+        self.spamEmail.append(email)
+
+    def addLegitimateEmail(self, email):
+        self.legitEmail.append(email)
+        
 def loadEmails(path):
         print("Loading emails...")
         for i in range(1,11):
@@ -118,9 +137,6 @@ def getRelevantWords(distinctWords):
 
         distinctWords = {x[0]: x[1] for x in distinctWords}
         print("after convert back to dictionary..........................")
-
-        for i in distinctWords:
-            print(distinctWords[i].content,distinctWords[i].mutualInfo)
 
         return distinctWords
 
