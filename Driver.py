@@ -58,11 +58,11 @@ def getDistinctWordsInTrainingSet(testingIndex):
         listOfWordsInLegitEmail = []
         listOfWordsInSpamEmail = []
         
-        print("Find distinct words and load training spam and legit emails...")
+        print("Finding distinct words.........")
         #getting all the emails read except for the testing index
         for i in range(len(folderList)):
             if i != testingIndex:
-                print("Folder",i)
+                print("Processing Emails in Folder ",i)
                 trainSpamEmails += folderList[i].spamEmail
                 trainLegitEmails += folderList[i].legitEmail
 
@@ -110,7 +110,7 @@ def getDistinctWordsInTrainingSet(testingIndex):
         print("Distinct words: ", len(trainDistinctWords))
 
 def selectFeatures(numAttribute):
-        print("Extracting features/ feature selections..................................")
+        print("Performing feature selection......")
         global trainDistinctWords
         global topTrainDistinctWords
         
