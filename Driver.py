@@ -63,8 +63,7 @@ def getDistinctWordsInTrainingSet(testingIndex):
         listOfWordsInLegitEmail = []
         listOfWordsInSpamEmail = []
         
-        print("Find distinct words and load training spam and legit emails...")
-        #getting all the emails read except for the testing index
+        print("Finding distinct words and counting frequency")
         for i in range(len(folderList)):
             if i != testingIndex:
                 print("Folder",i)
@@ -115,7 +114,7 @@ def getDistinctWordsInTrainingSet(testingIndex):
         print("Distinct words: ", len(trainDistinctWords))
 
 def selectFeatures(numAttribute):
-        print("Extracting features/ feature selections..................................")
+        print("Getting features")
         global trainDistinctWords
         global topTrainDistinctWords
         
