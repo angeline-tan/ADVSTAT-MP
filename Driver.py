@@ -1,8 +1,3 @@
-'''
-Created on Dec 13, 2016
-
-@author: Janine Tan
-'''
 import os
 import math
 from decimal import *
