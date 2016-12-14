@@ -36,7 +36,7 @@ class Folder:
     def addLegitimateEmail(self, email):
         self.legitEmail.append(email)
         
-def loadEmails(path):
+def loadEmailsPerFolder(path):
         for i in range(1,11):
             folderPath = path + str(i)
             folder = Folder()
@@ -50,7 +50,7 @@ def loadEmails(path):
 
             folderList.append(folder)
 
-def prepareTrainingSet(testingIndex):
+def getDistinctWordsInTrainingSet(testingIndex):
         global trainDistinctWords
         global trainSpamEmails
         global trainLegitEmails
@@ -192,12 +192,12 @@ def computeNaiveBayes(emailContent):
         return (probIsSpam * probWord_isPresentSpam) / (probIsSpam * probWord_isPresentSpam + probIsLegit * probWord_isPresentLegit)
 
 #start
-loadEmails('data\\bare\\part')
+loadEmailsPerFolder('data\\bare\\part')
 
 threshold_list = [1, 99, 999]
 
 for i in range(10):
-    prepareTrainingSet(i)
+    getDistinctWordsInTrainingSet(i)
     print("Test Folder: ", i)
     
     for x in range(50,700,50):
