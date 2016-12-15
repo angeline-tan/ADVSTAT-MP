@@ -9,7 +9,7 @@ trainLegitEmails = []
 folderList = []
 topTrainDistinctWords = {}
 
-class Word:
+class Term:
     def __init__(self, content):
         self.content = content
         self.mutualInfo = 0
@@ -58,7 +58,6 @@ def getDistinctWordsInTrainingSet(testingIndex):
         listOfWordsInLegitEmail = []
         listOfWordsInSpamEmail = []
         
-
         print("Finding distinct words and counting frequency")
         for i in range(len(folderList)):
             if i != testingIndex:
@@ -78,7 +77,7 @@ def getDistinctWordsInTrainingSet(testingIndex):
         ctrLegit = Counter(listOfWordsInLegitEmail)
         
         for token, count in ctrLegit.items():
-            word = Word(token)
+            word = Term(token)
             word.countLegitEmailContainingWord = count
             trainDistinctWords[token] = word
    
@@ -94,7 +93,7 @@ def getDistinctWordsInTrainingSet(testingIndex):
         
         for token, count in ctrSpam.items():
             if token not in trainDistinctWords:
-                word = Word(token)
+                word = Term(token)
                 word.countSpamEmailContainingWord = count  
                 trainDistinctWords[token] = word
             else : 
@@ -155,49 +154,51 @@ def getMutualInfo(word):
 
         return mutualInfo
 
-def computeNaiveBayes(emailContent):
-        #Naive Bayes: Multinomial NB, TF attributes
-        emailContent = emailContent.split()
-        dict_testingData = {} # dictionary of distinct words in testing data
-        total_trainingEmails = len(trainSpamEmails) + len(trainLegitEmails)
-        probIsSpam = len(trainSpamEmails) / total_trainingEmails
-        probIsLegit = len(trainLegitEmails) / total_trainingEmails
-        probWord_isPresentSpam = 1.0
-        probWord_isPresentLegit = 1.0
-
-        #determine whther term appeared in document
-
-        for key in topTrainDistinctWords:
-            if key in emailContent:
-                dict_testingData[key] = 1
+def naiveBayes(emailData):
+        emailData = emailData.split()
+        distinctWordsTesting = {} # list of distinct words for testing
+        totalTrainedEmails = len(trainSpamEmails) + len(trainLegitEmails)
+        spamProbabilityofEmail = len(trainSpamEmails) / totalTrainedEmails
+        legitProbabilityOfEmail = len(trainLegitEmails) / totalTrainedEmails
+        wordProbabilityIsInSpam = 1.0
+        wordProbabilityIsInLegit = 1.0
+        
+        #identify when a word appears in a document
+        for token in topTrainDistinctWords:
+            if token not in emailData:
+                distinctWordsTesting[token] = 0
             else :
-                dict_testingData[key] = 0
+                distinctWordsTesting[token] = 1
 
-        for key in topTrainDistinctWords:
-            # if key in self.trainingDistinctWords:
-            word = topTrainDistinctWords[key]
-            power = dict_testingData[key]
+        for token in topTrainDistinctWords:
+            power = distinctWordsTesting[token]
+            word = topTrainDistinctWords[token]
 
-            prob_t_s = (1 + word.countSpamEmailContainingWord) / (2 + len(trainSpamEmails))
-            prob_t_l = (1 + word.countLegitEmailContainingWord) / (2 + len(trainLegitEmails))
+            probTLegit = (1 + word.countLegitEmailContainingWord) / (2 + len(trainLegitEmails))
+            probTSpam = (1 + word.countSpamEmailContainingWord) / (2 + len(trainSpamEmails))
 
-            probWord_isPresentSpam *= (math.pow(prob_t_s, power) * math.pow(1-prob_t_s, 1-power))
-            probWord_isPresentLegit *= (math.pow(prob_t_l, power) * math.pow(1-prob_t_l, 1-power))
+            wordProbabilityIsInLegit *= (math.pow(probTLegit, power) * math.pow(1-probTLegit, 1-power))
+            wordProbabilityIsInSpam *= (math.pow(probTSpam, power) * math.pow(1-probTSpam, 1-power))
 
-        return (probIsSpam * probWord_isPresentSpam) / (probIsSpam * probWord_isPresentSpam + probIsLegit * probWord_isPresentLegit)
+        return (wordProbabilityIsInSpam * spamProbabilityofEmail) / (wordProbabilityIsInSpam * spamProbabilityofEmail + wordProbabilityIsInLegit *legitProbabilityOfEmail)
 
 #start
-loadEmailsPerFolder('data\\bare\\part')
-
-threshold_list = [1, 9, 999]
-result_list = {}
-
-for i in range(10):
-    getDistinctWordsInTrainingSet(i)
-    print("Test Folder: ", i)
+def getCertainResult(folderName, numAttribute, thresh):
+    spamPrecision = 0
+    spamRecall = 0
+    baselineWeightedAccuracy = 0
+    weightedAccuracy = 0
+    TCR = 0
+    threshold_lambda = thresh
+    threshold = threshold_lambda /(1+threshold_lambda)
     
-    for x in range(50,750,50):
-        selectFeatures(x)
+    loadEmailsPerFolder('data\\'+ folderName+'\\part')
+    for i in range(10):
+        getDistinctWordsInTrainingSet(i)
+        
+        print("Test Folder: ", i)
+        
+        selectFeatures(numAttribute)
         SpamCategSpam = 0 #spam email categorized as spam
         SpamCategLegit = 0 #spam email categorized as legit
         LegitCategSpam = 0 #legit email categorized as spam
@@ -205,56 +206,126 @@ for i in range(10):
     
         spamSize = len(folderList[i].spamEmail)
         legitSize = len(folderList[i].legitEmail)
-        
-        for y in threshold_list:
-            if i == 0:
-                spamPrecision = 0
-                spamRecall = 0
-                baselineWeightedAccuracy = 0
-                weightedAccuracy = 0
-                TCR = 0
+            
+        for email in folderList[i].spamEmail:
+            result = naiveBayes(email)
+            if result > threshold: #isSpam
+                SpamCategSpam += 1
+            else: #isLegit
+                SpamCategLegit += 1
+    
+        for email in folderList[i].legitEmail:
+            result = naiveBayes(email)
+            if result > threshold: #isSpam
+                LegitCategSpam += 1
             else:
-                spamPrecision = result_list["spamPrecision" + str(x) + str(y)]
-                spamRecall = result_list["spamRecall" + str(x) + str(y)]
-                weightedAccuracy = result_list["weightedAccuracy" + str(x) + str(y)]
-                baselineWeightedAccuracy = result_list["baselineWeightedAccuracy" + str(x) + str(y)]
-                TCR = result_list["TCR" + str(x) + str(y)]
+                LegitCategLegit += 1
+    
+        spamPrecision += SpamCategSpam / (SpamCategSpam + LegitCategSpam)
+        spamRecall += SpamCategSpam / (SpamCategSpam+SpamCategLegit)
+        weightedAccuracy += (threshold_lambda * LegitCategLegit + SpamCategSpam)/ (threshold_lambda * legitSize + spamSize)
+        baselineWeightedAccuracy += (threshold_lambda * legitSize)/(threshold_lambda * legitSize + spamSize)
+        TCR += spamSize / (threshold_lambda* LegitCategSpam + SpamCategLegit)
+        
+    print()
+    print("Result: ")
+    print("Folder Name: " + folderName)
+    print("Number of Attribute: ", numAttribute, "Threshold: ", thresh)
+    print ("AVG Spam Recall", (spamRecall/10) *100)
+    print("AVG Spam Precision", (spamPrecision/10) *100)
+    print ("AVG Weighted Accuracy", (weightedAccuracy/10) *100)
+    print ("AVG Baseline Weighted Accuracy", (baselineWeightedAccuracy/10) *100) 
+    print ("AVG TCR", TCR /10)
+    print()
+        
+def getAllResult():
+    folderNames = ['bare', 'lemm', 'lemm_stop', 'stop']
+    
+    for n in folderNames:
+        loadEmailsPerFolder('data\\' + n + '\\part')
+    
+        threshold_list = [1, 9, 999]
+        result_list = {}
+        
+        for i in range(10):
+            getDistinctWordsInTrainingSet(i)
+            print("Test Folder: ", i)
+            
+            for x in range(50,750,50):
+                selectFeatures(x)
+                SpamCategSpam = 0 #spam email categorized as spam
+                SpamCategLegit = 0 #spam email categorized as legit
+                LegitCategSpam = 0 #legit email categorized as spam
+                LegitCategLegit = 0 #legit email categorized as legit
+            
+                spamSize = len(folderList[i].spamEmail)
+                legitSize = len(folderList[i].legitEmail)
                 
-            threshold_lambda = y
-            threshold = threshold_lambda /(1+threshold_lambda)
-            for email in folderList[i].spamEmail:
-                result = computeNaiveBayes(email)
-                if result > threshold: #isSpam
-                    SpamCategSpam += 1
-                else: #isLegit
-                    SpamCategLegit += 1
-        
-            for email in folderList[i].legitEmail:
-                result = computeNaiveBayes(email)
-                if result > threshold: #isSpam
-                    LegitCategSpam += 1
-                else:
-                    LegitCategLegit += 1
-        
-            spamPrecision += SpamCategSpam / (SpamCategSpam + LegitCategSpam)
-            spamRecall += SpamCategSpam / (SpamCategSpam+SpamCategLegit)
-            weightedAccuracy += (threshold_lambda * LegitCategLegit + SpamCategSpam)/ (threshold_lambda * legitSize + spamSize)
-            baselineWeightedAccuracy += (threshold_lambda * legitSize)/(threshold_lambda * legitSize + spamSize)
-            TCR += spamSize / (threshold_lambda* LegitCategSpam + SpamCategLegit)
-            
-            result_list["spamPrecision" + str(x) + str(y)] = spamPrecision
-            result_list["spamRecall" + str(x) + str(y)] = spamRecall
-            result_list["weightedAccuracy" + str(x) + str(y)] = weightedAccuracy
-            result_list["baselineWeightedAccuracy" + str(x) + str(y)] = baselineWeightedAccuracy
-            result_list["TCR" + str(x) + str(y)] = TCR
-            
-for x in range(50,750,50):
-    for y in threshold_list:
-            print("Number of Attribute: ", x, "Threshold: ", y)
-            print("AVG Spam Precision", (result_list["spamPrecision" + str(x) + str(y)]/10) *100)
-            print ("AVG Spam Recall", (result_list["spamRecall" + str(x) + str(y)]/10) *100)
-            print ("AVG Weighted Accuracy", (result_list["weightedAccuracy" + str(x) + str(y)]/10) *100)
-            print ("AVG Baseline Weighted Accuracy", (result_list["baselineWeightedAccuracy" + str(x) + str(y)]/10) *100) 
-            print ("AVG TCR", result_list["TCR" + str(x) + str(y)] /10)
-            print()
-            
+                for y in threshold_list:
+                    if i == 0:
+                        spamPrecision = 0
+                        spamRecall = 0
+                        baselineWeightedAccuracy = 0
+                        weightedAccuracy = 0
+                        TCR = 0
+                    else:
+                        spamPrecision = result_list["spamPrecision" + str(x) + str(y)]
+                        spamRecall = result_list["spamRecall" + str(x) + str(y)]
+                        weightedAccuracy = result_list["weightedAccuracy" + str(x) + str(y)]
+                        baselineWeightedAccuracy = result_list["baselineWeightedAccuracy" + str(x) + str(y)]
+                        TCR = result_list["TCR" + str(x) + str(y)]
+                        
+                    threshold_lambda = y
+                    threshold = threshold_lambda /(1+threshold_lambda)
+                    for email in folderList[i].spamEmail:
+                        result = naiveBayes(email)
+                        if result > threshold: #isSpam
+                            SpamCategSpam += 1
+                        else: #isLegit
+                            SpamCategLegit += 1
+                
+                    for email in folderList[i].legitEmail:
+                        result = naiveBayes(email)
+                        if result > threshold: #isSpam
+                            LegitCategSpam += 1
+                        else:
+                            LegitCategLegit += 1
+                
+                    spamPrecision += SpamCategSpam / (SpamCategSpam + LegitCategSpam)
+                    spamRecall += SpamCategSpam / (SpamCategSpam+SpamCategLegit)
+                    weightedAccuracy += (threshold_lambda * LegitCategLegit + SpamCategSpam)/ (threshold_lambda * legitSize + spamSize)
+                    baselineWeightedAccuracy += (threshold_lambda * legitSize)/(threshold_lambda * legitSize + spamSize)
+                    TCR += spamSize / (threshold_lambda* LegitCategSpam + SpamCategLegit)
+                    
+                    result_list["spamPrecision" + str(x) + str(y)] = spamPrecision
+                    result_list["spamRecall" + str(x) + str(y)] = spamRecall
+                    result_list["weightedAccuracy" + str(x) + str(y)] = weightedAccuracy
+                    result_list["baselineWeightedAccuracy" + str(x) + str(y)] = baselineWeightedAccuracy
+                    result_list["TCR" + str(x) + str(y)] = TCR
+        print()
+        print("Folder Name: " + n)            
+        for x in range(50,750,50):
+            for y in threshold_list:
+                    print("Number of Attribute: ", x, "Threshold: ", y)
+                    print ("AVG Spam Recall", (result_list["spamRecall" + str(x) + str(y)]/10) *100)
+                    print("AVG Spam Precision", (result_list["spamPrecision" + str(x) + str(y)]/10) *100)
+                    print ("AVG Weighted Accuracy", (result_list["weightedAccuracy" + str(x) + str(y)]/10) *100)
+                    print ("AVG Baseline Weighted Accuracy", (result_list["baselineWeightedAccuracy" + str(x) + str(y)]/10) *100) 
+                    print ("AVG TCR", result_list["TCR" + str(x) + str(y)] /10)
+                    print()
+                    
+getCertainResult('bare',50, 1)
+getCertainResult('stop',50, 1)
+getCertainResult('lemm',100, 1)
+getCertainResult('lemm_stop',100, 1)
+getCertainResult('bare',200, 9)
+getCertainResult('stop',200, 9)
+getCertainResult('lemm',100, 9)
+getCertainResult('lemm_stop',100, 9)
+getCertainResult('bare',200, 999)
+getCertainResult('stop',200, 999)
+getCertainResult('lemm',300, 999)
+getCertainResult('lemm_stop',300, 999)
+
+#getAllResult()
+                
