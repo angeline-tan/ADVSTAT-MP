@@ -110,7 +110,7 @@ def getDistinctWordsInTrainingSet(testingIndex):
         print("Distinct words: ", len(trainDistinctWords))
 
 def selectFeatures(numAttribute):
-        print("Performing feature selection......")
+        print("Performing feature selection for ", numAttribute, "attribute")
         global trainDistinctWords
         global topTrainDistinctWords
         
@@ -189,13 +189,15 @@ def computeNaiveBayes(emailContent):
 #start
 loadEmailsPerFolder('data\\bare\\part')
 
-threshold_list = [1, 99, 999]
+threshold_list = [1, 9, 999]
+result_list = {}
+ctr = 0
 
 for i in range(10):
     getDistinctWordsInTrainingSet(i)
     print("Test Folder: ", i)
     
-    for x in range(50,700,50):
+    for x in range(50,750,50):
         selectFeatures(x)
         
         SpamCategSpam = 0 #spam email categorized as spam
@@ -207,13 +209,19 @@ for i in range(10):
         legitSize = len(folderList[i].legitEmail)
         
         for y in threshold_list:
-            sPrecision = 0
-            sRecall = 0
-            wAcc_b = 0
-            wErr_b = 0
-            wAcc = 0
-            wErr = 0
-            TCR = 0
+            if i == 0:
+                spamPrecision = 0
+                spamRecall = 0
+                baselineWeightedAccuracy = 0
+                weightedAccuracy = 0
+                TCR = 0
+            else:
+                spamPrecision = result_list["spamPrecision" + str(x) + str(y)]
+                spamRecall = result_list["spamRecall" + str(x) + str(y)]
+                weightedAccuracy = result_list["weightedAccuracy" + str(x) + str(y)]
+                baselineWeightedAccuracy = result_list["baselineWeightedAccuracy" + str(x) + str(y)]
+                TCR = result_list["TCR" + str(x) + str(y)]
+                
             threshold_lambda = y
             threshold = threshold_lambda /(1+threshold_lambda)
             for email in folderList[i].spamEmail:
@@ -230,23 +238,32 @@ for i in range(10):
                 else:
                     LegitCategLegit += 1
         
-            sPrecision = SpamCategSpam / (SpamCategSpam + LegitCategSpam)
-            sRecall = SpamCategSpam / (SpamCategSpam+SpamCategLegit)
-            wAcc = (threshold_lambda * LegitCategLegit + SpamCategSpam)/ (threshold_lambda * legitSize + spamSize)
-            wErr = (threshold_lambda * LegitCategSpam + SpamCategLegit)/ (threshold_lambda * legitSize + spamSize)
-            wAcc_b = (threshold_lambda * legitSize)/(threshold_lambda * legitSize + spamSize)
-            wErr_b = spamSize / (threshold_lambda * legitSize + spamSize)
-            TCR = wErr_b / wErr
+            spamPrecision += SpamCategSpam / (SpamCategSpam + LegitCategSpam)
+            spamRecall += SpamCategSpam / (SpamCategSpam+SpamCategLegit)
+            weightedAccuracy += (threshold_lambda * LegitCategLegit + SpamCategSpam)/ (threshold_lambda * legitSize + spamSize)
+            baselineWeightedAccuracy += (threshold_lambda * legitSize)/(threshold_lambda * legitSize + spamSize)
+            TCR += spamSize / (threshold_lambda* LegitCategSpam + SpamCategLegit)
+            
+            result_list["spamPrecision" + str(x) + str(y)] = spamPrecision
+            result_list["spamRecall" + str(x) + str(y)] = spamRecall
+            result_list["weightedAccuracy" + str(x) + str(y)] = weightedAccuracy
+            result_list["baselineWeightedAccuracy" + str(x) + str(y)] = baselineWeightedAccuracy
+            result_list["TCR" + str(x) + str(y)] = TCR
             
             print("Number of Attribute: ", x, "Threshold: ", y)
-            print("Spam Precision: ", sPrecision)
-            print("Spam Precision(1-E): ", 1-wErr)
-            print("Spam Recall: ", sRecall)
-            print("wAcc: ", wAcc)
-            print("wErr: ", wErr)
-            print("wAcc_b: ", wAcc_b)
-            print("wErr_b: ", wErr_b)
+            print("Spam Precision: ", spamPrecision)
+            print("Spam Recall: ", spamRecall)
+            print("Weighted Accuracy: ", weightedAccuracy)
+            print("Baseline Weighted Accuracy: ", baselineWeightedAccuracy)
             print("TCR: ", TCR)
             print()
-
-
+            
+for x in range(50,750,50):
+    for y in threshold_list:
+            print("Number of Attribute: ", x, "Threshold: ", y)
+            print("AVG Spam Precision", (result_list["spamPrecision" + str(x) + str(y)]/10) *100)
+            print ("AVG Spam Recall", (result_list["spamRecall" + str(x) + str(y)]/10) *100)
+            print ("AVG Weighted Accuracy", (result_list["weightedAccuracy" + str(x) + str(y)]/10) *100)
+            print ("AVG Baseline Weighted Accuracy", (result_list["baselineWeightedAccuracy" + str(x) + str(y)]/10) *100) 
+            print ("AVG TCR", result_list["TCR" + str(x) + str(y)] /10)
+            
