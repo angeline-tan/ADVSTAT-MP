@@ -129,27 +129,27 @@ def getMutualInfo(word):
 
         try:
             # P(x=0,c=spam)
-            mutualInfo = (word.countSpamEmailNotContainingWord/totalResults)* math.log((word.countSpamEmailNotContainingWord * totalResults)/((word.countSpamEmailNotContainingWord + word.countLegitEmailNotContainingWord)*(word.countSpamEmailNotContainingWord + word.countSpamEmailContainingWord)),2)
+            mutualInfo = (word.countSpamEmailNotContainingWord / totalResults) * math.log((word.countSpamEmailNotContainingWord * totalResults) / ((word.countSpamEmailNotContainingWord + word.countLegitEmailNotContainingWord) * (word.countSpamEmailNotContainingWord + word.countSpamEmailContainingWord)), 2)
 
         except (ZeroDivisionError, ValueError):
             mutualInfo = 0.0
    
         try:
             # P(x=0,c=legitimate)
-            mutualInfo += (word.countLegitEmailNotContainingWord/totalResults) *math.log((word.countLegitEmailNotContainingWord * totalResults) /((word.countLegitEmailNotContainingWord+word.countSpamEmailNotContainingWord) * (word.countLegitEmailNotContainingWord + word.countLegitEmailContainingWord)),2)
+            mutualInfo += (word.countLegitEmailNotContainingWord / totalResults) * math.log((word.countLegitEmailNotContainingWord * totalResults) / ((word.countLegitEmailNotContainingWord + word.countSpamEmailNotContainingWord) * (word.countLegitEmailNotContainingWord + word.countLegitEmailContainingWord)), 2)
 
         except (ZeroDivisionError, ValueError):
             mutualInfo += 0.0
         
         try:
             # P(x=1,c=spam)
-            mutualInfo += (word.countSpamEmailContainingWord / totalResults) *math.log((word.countSpamEmailContainingWord * totalResults)/((word.countSpamEmailContainingWord+word.countLegitEmailContainingWord) * (word.countSpamEmailContainingWord + word.countSpamEmailNotContainingWord)),2)
+            mutualInfo += (word.countSpamEmailContainingWord / totalResults) * math.log((word.countSpamEmailContainingWord * totalResults) / ((word.countSpamEmailContainingWord + word.countLegitEmailContainingWord) * (word.countSpamEmailContainingWord + word.countSpamEmailNotContainingWord)), 2)
         except (ZeroDivisionError, ValueError):
             mutualInfo += 0.0
        
         try:
             # P(x=1,c=legitimate)
-            mutualInfo += (word.countLegitEmailContainingWord/totalResults) *math.log((word.countLegitEmailContainingWord * totalResults)/((word.countLegitEmailContainingWord+word.countSpamEmailContainingWord) * (word.countLegitEmailContainingWord + word.countLegitEmailNotContainingWord)),2)
+            mutualInfo += (word.countLegitEmailContainingWord / totalResults) * math.log((word.countLegitEmailContainingWord * totalResults) / ((word.countLegitEmailContainingWord + word.countSpamEmailContainingWord) * (word.countLegitEmailContainingWord + word.countLegitEmailNotContainingWord)), 2)
         except (ZeroDivisionError, ValueError):
             mutualInfo += 0.0
 
@@ -198,7 +198,6 @@ for i in range(10):
     
     for x in range(50,750,50):
         selectFeatures(x)
-        
         SpamCategSpam = 0 #spam email categorized as spam
         SpamCategLegit = 0 #spam email categorized as legit
         LegitCategSpam = 0 #legit email categorized as spam
@@ -249,14 +248,6 @@ for i in range(10):
             result_list["baselineWeightedAccuracy" + str(x) + str(y)] = baselineWeightedAccuracy
             result_list["TCR" + str(x) + str(y)] = TCR
             
-            print("Number of Attribute: ", x, "Threshold: ", y)
-            print("Spam Precision: ", spamPrecision)
-            print("Spam Recall: ", spamRecall)
-            print("Weighted Accuracy: ", weightedAccuracy)
-            print("Baseline Weighted Accuracy: ", baselineWeightedAccuracy)
-            print("TCR: ", TCR)
-            print()
-            
 for x in range(50,750,50):
     for y in threshold_list:
             print("Number of Attribute: ", x, "Threshold: ", y)
@@ -265,4 +256,5 @@ for x in range(50,750,50):
             print ("AVG Weighted Accuracy", (result_list["weightedAccuracy" + str(x) + str(y)]/10) *100)
             print ("AVG Baseline Weighted Accuracy", (result_list["baselineWeightedAccuracy" + str(x) + str(y)]/10) *100) 
             print ("AVG TCR", result_list["TCR" + str(x) + str(y)] /10)
+            print()
             
