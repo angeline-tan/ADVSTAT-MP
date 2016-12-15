@@ -191,7 +191,6 @@ loadEmailsPerFolder('data\\bare\\part')
 
 threshold_list = [1, 9, 999]
 result_list = {}
-ctr = 0
 
 for i in range(10):
     getDistinctWordsInTrainingSet(i)
