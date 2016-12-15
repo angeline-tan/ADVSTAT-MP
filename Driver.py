@@ -58,8 +58,8 @@ def getDistinctWordsInTrainingSet(testingIndex):
         listOfWordsInLegitEmail = []
         listOfWordsInSpamEmail = []
         
-        print("Finding distinct words.........")
-        #getting all the emails read except for the testing index
+
+        print("Finding distinct words and counting frequency")
         for i in range(len(folderList)):
             if i != testingIndex:
                 print("Processing Emails in Folder ",i)
